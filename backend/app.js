@@ -21,19 +21,16 @@ let products = [
   { id: '10', title: 'PS5 Slim', price: 59999 }
 ];
 
-// GET /api/products
 app.get('/api/products', (req, res) => {
   res.json(products);
 });
 
-// GET /api/products/:id
 app.get('/api/products/:id', (req, res) => {
   const product = products.find(p => p.id === req.params.id);
   if (!product) return res.status(404).json({ error: 'Товар не найден' });
   res.json(product);
 });
 
-// POST /api/products
 app.post('/api/products', (req, res) => {
   const { title, price } = req.body;
   if (!title || !price || price <= 0) {
@@ -44,7 +41,6 @@ app.post('/api/products', (req, res) => {
   res.status(201).json(newProduct);
 });
 
-// PATCH /api/products/:id
 app.patch('/api/products/:id', (req, res) => {
   const index = products.findIndex(p => p.id === req.params.id);
   if (index === -1) return res.status(404).json({ error: 'Товар не найден' });
@@ -56,7 +52,6 @@ app.patch('/api/products/:id', (req, res) => {
   res.json(products[index]);
 });
 
-// DELETE /api/products/:id
 app.delete('/api/products/:id', (req, res) => {
   const index = products.findIndex(p => p.id === req.params.id);
   if (index === -1) return res.status(404).json({ error: 'Товар не найден' });

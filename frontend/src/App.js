@@ -88,7 +88,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Товары</h1>
+        <h1>Кобылянский</h1>
       </header>
 
       <form onSubmit={handleSubmit} className="form">
