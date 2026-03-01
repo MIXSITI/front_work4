@@ -1,26 +1,27 @@
 ﻿import { useEffect, useState } from "react";
 import axios from "axios";
+import './App.css';
 
 const apiClient = axios.create({
   baseURL: "http://localhost:3000/api",
   headers: {
     "Content-Type": "application/json",
-    accept: "application/json"
+    "accept": "application/json"
   }
 });
 
 export default function App() {
-  const [users, setUsers] = useState([]);
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
+  const [products, setProducts] = useState([]);
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUsers = async () => {
+  const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/users");
-      setUsers(response.data);
+      const response = await apiClient.get("/products");
+      setProducts(response.data);
     } catch (error) {
       console.error(error);
       alert("Ошибка запроса");
@@ -30,47 +31,46 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadUsers();
+    loadProducts();
   }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const trimmedTitle = title.trim();
+    const parsedPrice = parseFloat(price);
 
-    const trimmedName = name.trim();
-    const parsedAge = Number(age);
-
-    if (!trimmedName || !Number.isFinite(parsedAge)) {
-      alert("Имя и возраст обязательны");
+    if (!trimmedTitle || !Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      alert("Название и цена (>0) обязательны");
       return;
     }
 
     try {
       if (editingId) {
-        await apiClient.patch(`/users/${editingId}`, { name: trimmedName, age: parsedAge });
+        await apiClient.patch(`/products/${editingId}`, { title: trimmedTitle, price: parsedPrice });
       } else {
-        await apiClient.post("/users", { name: trimmedName, age: parsedAge });
+        await apiClient.post("/products", { title: trimmedTitle, price: parsedPrice });
       }
-
-      setName("");
-      setAge("");
+      setTitle("");
+      setPrice("");
       setEditingId(null);
-      await loadUsers();
+      await loadProducts();
     } catch (error) {
       console.error(error);
       alert("Ошибка запроса");
     }
   };
 
-  const handleEdit = (user) => {
-    setEditingId(user.id);
-    setName(user.name);
-    setAge(String(user.age));
+  const handleEdit = (product) => {
+    setEditingId(product.id);
+    setTitle(product.title);
+    setPrice(String(product.price));
   };
 
   const handleDelete = async (id) => {
+    if (!confirm('Удалить товар?')) return;
     try {
-      await apiClient.delete(`/users/${id}`);
-      await loadUsers();
+      await apiClient.delete(`/products/${id}`);
+      await loadProducts();
     } catch (error) {
       console.error(error);
       alert("Ошибка запроса");
@@ -79,50 +79,61 @@ export default function App() {
 
   const handleCancel = () => {
     setEditingId(null);
-    setName("");
-    setAge("");
+    setTitle("");
+    setPrice("");
   };
 
-  return (
-    <main style={{ maxWidth: 640, margin: "20px auto", fontFamily: "Arial, sans-serif" }}>
-      <h1>Users App</h1>
+  if (loading) return <div className="loading">Загрузка...</div>;
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+  return (
+    <div className="app">
+      <header className="header">
+        <h1>Товары</h1>
+      </header>
+
+      <form onSubmit={handleSubmit} className="form">
         <input
-          placeholder="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          type="text"
+          placeholder="Название товара"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="input"
+          required
         />
         <input
-          placeholder="Age"
-          value={age}
-          onChange={(event) => setAge(event.target.value)}
+          type="number"
+          placeholder="Цена"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          min="0"
+          step="0.01"
+          className="input"
+          required
         />
-        <button type="submit">{editingId ? "Update" : "Create"}</button>
+        <button type="submit" className="btn primary">
+          {editingId ? "Обновить" : "Создать"}
+        </button>
         {editingId && (
-          <button type="button" onClick={handleCancel}>
-            Cancel
+          <button type="button" onClick={handleCancel} className="btn secondary">
+            Отмена
           </button>
         )}
       </form>
 
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <ul>
-          {users.map((user) => (
-            <li key={user.id} style={{ marginBottom: 8 }}>
-              {user.name} ({user.age})
-              <button style={{ marginLeft: 8 }} onClick={() => handleEdit(user)}>
-                Edit
-              </button>
-              <button style={{ marginLeft: 8 }} onClick={() => handleDelete(user.id)}>
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+      <div className="products">
+        {products.map((product) => (
+          <div key={product.id} className="product-card">
+            <div className="product-info">
+              <h3>{product.title}</h3>
+              <div className="price">{product.price.toLocaleString()} ₽</div>
+            </div>
+            <div className="actions">
+              <button onClick={() => handleEdit(product)} className="btn edit">Редактировать</button>
+              <button onClick={() => handleDelete(product.id)} className="btn delete">Удалить</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

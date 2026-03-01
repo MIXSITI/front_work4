@@ -1,124 +1,70 @@
-﻿const express = require("express");
-const cors = require("cors");
-const { nanoid } = require("nanoid");
+﻿const express = require('express');
+const cors = require('cors');
+const { nanoid } = require('nanoid');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = 3000;
 
-app.use(
-  cors({
-    origin: "http://localhost:3001",
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  })
-);
-
+app.use(cors());
 app.use(express.json());
 
-let users = [
-  { id: nanoid(6), name: "User 1", age: 16 },
-  { id: nanoid(6), name: "User 2", age: 18 },
-  { id: nanoid(6), name: "User 3", age: 20 }
+let products = [
+  { id: '1', title: 'iPhone 15 Pro', price: 99999 },
+  { id: '2', title: 'Samsung Galaxy S24', price: 89999 },
+  { id: '3', title: 'MacBook Air M2', price: 129999 },
+  { id: '4', title: 'AirPods Pro 2', price: 24999 },
+  { id: '5', title: 'Sony WH-1000XM5', price: 39999 },
+  { id: '6', title: 'iPad Pro 12.9"', price: 119999 },
+  { id: '7', title: 'Apple Watch Ultra', price: 79999 },
+  { id: '8', title: 'Dell XPS 13', price: 109999 },
+  { id: '9', title: 'Nintendo Switch OLED', price: 34999 },
+  { id: '10', title: 'PS5 Slim', price: 59999 }
 ];
 
-app.use((req, res, next) => {
-  res.on("finish", () => {
-    console.log(`[${new Date().toISOString()}] [${req.method}] ${res.statusCode} ${req.path}`);
-
-    if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
-      console.log("Body:", req.body);
-    }
-  });
-
-  next();
+// GET /api/products
+app.get('/api/products', (req, res) => {
+  res.json(products);
 });
 
-function findUserOr404(id, res) {
-  const user = users.find((u) => u.id == id);
-
-  if (!user) {
-    res.status(404).json({ error: "Пользователь не найден" });
-    return null;
-  }
-
-  return user;
-}
-
-app.post("/api/users", (req, res) => {
-  const { name, age } = req.body;
-
-  if (!name || age === undefined) {
-    return res.status(400).json({ error: "Имя и возраст обязательны" });
-  }
-
-  const newUser = {
-    id: nanoid(6),
-    name: String(name).trim(),
-    age: Number(age)
-  };
-
-  users.push(newUser);
-  res.status(201).json(newUser);
+// GET /api/products/:id
+app.get('/api/products/:id', (req, res) => {
+  const product = products.find(p => p.id === req.params.id);
+  if (!product) return res.status(404).json({ error: 'Товар не найден' });
+  res.json(product);
 });
 
-app.get("/api/users", (req, res) => {
-  res.json(users);
+// POST /api/products
+app.post('/api/products', (req, res) => {
+  const { title, price } = req.body;
+  if (!title || !price || price <= 0) {
+    return res.status(400).json({ error: 'Название и цена обязательны' });
+  }
+  const newProduct = { id: nanoid(), title, price: Number(price) };
+  products.push(newProduct);
+  res.status(201).json(newProduct);
 });
 
-app.get("/api/users/:id", (req, res) => {
-  const user = findUserOr404(req.params.id, res);
-
-  if (!user) {
-    return;
-  }
-
-  res.json(user);
+// PATCH /api/products/:id
+app.patch('/api/products/:id', (req, res) => {
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'Товар не найден' });
+  
+  const { title, price } = req.body;
+  if (title) products[index].title = title;
+  if (price) products[index].price = Number(price);
+  
+  res.json(products[index]);
 });
 
-app.patch("/api/users/:id", (req, res) => {
-  const user = findUserOr404(req.params.id, res);
-
-  if (!user) {
-    return;
-  }
-
-  if (req.body?.name === undefined && req.body?.age === undefined) {
-    return res.status(400).json({ error: "Нет данных для обновления" });
-  }
-
-  const { name, age } = req.body;
-
-  if (name !== undefined) {
-    user.name = String(name).trim();
-  }
-
-  if (age !== undefined) {
-    user.age = Number(age);
-  }
-
-  res.json(user);
-});
-
-app.delete("/api/users/:id", (req, res) => {
-  const exists = users.some((u) => u.id === req.params.id);
-
-  if (!exists) {
-    return res.status(404).json({ error: "Пользователь не найден" });
-  }
-
-  users = users.filter((u) => u.id !== req.params.id);
+// DELETE /api/products/:id
+app.delete('/api/products/:id', (req, res) => {
+  const index = products.findIndex(p => p.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'Товар не найден' });
+  
+  products.splice(index, 1);
   res.status(204).send();
 });
 
-app.use((req, res) => {
-  res.status(404).json({ error: "Маршрут не найден" });
-});
-
-app.use((err, req, res, next) => {
-  console.error("Необработанная ошибка:", err);
-  res.status(500).json({ error: "Внутренняя ошибка сервера" });
-});
-
-app.listen(port, () => {
-  console.log(`Server started at http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Backend запущен на http://localhost:${PORT}`);
 });
